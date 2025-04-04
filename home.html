@@ -9,9 +9,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         #portfolioChart {
-            max-height: 450px; /* Set a maximum height for the chart */
-            width: 100%; /* Ensure it spans the full width of its container */
-            margin: 0 auto; /* Center the chart */
+            max-height: 450px;
+            width: 100%;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -93,11 +93,11 @@
             let totalValue = 0;
 
             for (const stock of stocks) {
-                const currentPrice = await fetchCurrentPrice(stock.symbol); // Fetch the current price
-                const quantity = parseFloat(stock.quantity) || 0; // Ensure quantity is a valid number
+                const currentPrice = await fetchCurrentPrice(stock.symbol);
+                const quantity = parseFloat(stock.quantity) || 0;
 
                 if (currentPrice !== null && !isNaN(quantity)) {
-                    totalValue += currentPrice * quantity; // Add the current value of the stock to the total
+                    totalValue += currentPrice * quantity;
                 }
             }
 
@@ -105,7 +105,7 @@
         }
 
         async function fetchCurrentPrice(symbol) {
-            const apiKey = 'cvk3jg9r01qu5brmcfngcvk3jg9r01qu5brmcfo0'; // Replace with your Finnhub API key
+            const apiKey = 'cvk3jg9r01qu5brmcfngcvk3jg9r01qu5brmcfo0';
             const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`;
 
             try {
@@ -116,7 +116,7 @@
                 }
 
                 const data = await response.json();
-                return data.c; // 'c' is the current price in Finnhub's API response
+                return data.c;
             } catch (error) {
                 console.error('Error fetching current price:', error);
                 return null;
@@ -142,11 +142,11 @@
             let totalValue = 0;
 
             for (const coin of crypto) {
-                const currentPrice = await fetchCurrentCryptoPrice(coin.symbol); // Fetch the current price
-                const quantity = parseFloat(coin.quantity) || 0; // Ensure quantity is a valid number
+                const currentPrice = await fetchCurrentCryptoPrice(coin.symbol);
+                const quantity = parseFloat(coin.quantity) || 0;
 
                 if (currentPrice !== null && !isNaN(quantity)) {
-                    totalValue += currentPrice * quantity; // Add the current value of the cryptocurrency to the total
+                    totalValue += currentPrice * quantity;
                 }
             }
 
@@ -158,10 +158,9 @@
                 BTC: 'bitcoin',
                 ETH: 'ethereum',
                 DOGE: 'dogecoin',
-                // Add more mappings as needed
             };
 
-            const id = cryptoSymbolToId[symbol.toUpperCase()] || symbol.toLowerCase(); // Map symbol to CoinGecko ID or fallback to lowercase
+            const id = cryptoSymbolToId[symbol.toUpperCase()] || symbol.toLowerCase();
             const url = `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`;
 
             try {
@@ -172,10 +171,10 @@
                 }
 
                 const data = await response.json();
-                console.log(`API Response for ${symbol}:`, data); // Debugging: Log the API response
+                console.log(`API Response for ${symbol}:`, data);
 
                 if (data[id] && data[id].usd) {
-                    return data[id].usd; // Return the USD price
+                    return data[id].usd;
                 } else {
                     console.warn(`Price not found for symbol: ${symbol}`);
                     return null;
@@ -187,10 +186,10 @@
         }
 
         async function displayPortfolioData() {
-            const stockValue = await calculateTotalStocksValue(); // Wait for the stock value calculation
+            const stockValue = await calculateTotalStocksValue();
             const bondValue = calculateTotalBondsValue();
             const realEstateValue = calculateTotalRealEstateValue();
-            const cryptoValue = await calculateTotalCryptoValue(); // Wait for the crypto value calculation
+            const cryptoValue = await calculateTotalCryptoValue();
             const totalValue = stockValue + bondValue + realEstateValue + cryptoValue;
 
             document.getElementById('totalPortfolioValue').innerText = `$${totalValue.toLocaleString()}`;
@@ -200,21 +199,31 @@
             document.getElementById('cryptoValue').innerText = `$${cryptoValue.toLocaleString()}`;
         }
 
-        function displayPortfolioChart() {
-            const stockValue = calculateTotalStocksValue();
+        async function displayPortfolioChart() {
+            const stockValue = await calculateTotalStocksValue();
             const bondValue = calculateTotalBondsValue();
             const realEstateValue = calculateTotalRealEstateValue();
-            const cryptoValue = calculateTotalCryptoValue();
+            const cryptoValue = await calculateTotalCryptoValue();
 
             const chartData = [stockValue, bondValue, realEstateValue, cryptoValue];
 
+            console.log('Chart Data:', chartData); // Debugging: Log the chart data
+
             if (chartData.every(value => value === 0)) {
+                console.warn('All chart data values are zero. Hiding the chart.');
                 document.getElementById('portfolioChart').style.display = 'none';
                 return;
             }
 
             const ctx = document.getElementById('portfolioChart').getContext('2d');
-            new Chart(ctx, {
+
+            // Destroy the previous chart instance if it exists
+            if (window.portfolioChart && typeof window.portfolioChart.destroy === 'function') {
+                window.portfolioChart.destroy();
+            }
+
+            // Create a new pie chart
+            window.portfolioChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: ['Stocks', 'Bonds', 'Real Estate', 'Crypto'],
@@ -223,7 +232,19 @@
                         backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56'],
                         hoverBackgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56']
                     }]
-                }
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Portfolio Distribution',
+                        },
+                    },
+                },
             });
         }
 
